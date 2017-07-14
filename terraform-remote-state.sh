@@ -7,6 +7,10 @@ terraform_bucket_name="$3"
 application="$4"
 environment="$5"
 
+tfstate="s3://$terraform_bucket_name/$application/$environment.tfstate"
+tfversion='0.9.11'
+cleanup_backend=1
+
 function usage() {
   echo "Description: Sets up remote statefile. Should be run before apply or destroy."
   echo "Usage: terraform.sh [module_path] [bucket_region] [bucket_name] [application] [environment]"
@@ -52,8 +56,20 @@ rm -rf "$module_path/.terraform"
 # Make sure we're running in the module directory
 cd "$module_path"
 
-tfstate="s3://$terraform_bucket_name/$application/$environment.tfstate"
-tfversion='0.9.8'
+# Generate backend.tf config if not already present
+if [[ ! -e "backend.tf" ]]; then
+  echo "Backend configuration not found, generating now"
+  cleanup_backend=0
+  cat <<- EOF > backend.tf
+    terraform {
+      backend "s3" {
+        bucket    = "$terraform_bucket_name"
+        encrypt   = "true"
+      }
+    }
+EOF
+fi
+
 
 if [[ -z "`aws s3 ls $tfstate`" ]]; then
   echo "No previous state found"
@@ -65,14 +81,18 @@ else
   fi
 fi
 
-if [[ "`uname`" == "Darwin" ]]; then
-  bin="darwin_amd64"
-else
-  bin="linux_amd64"
+if [[ -z "`(./terraform --version | head -n 1 | grep $tfversion) > /dev/null 2>&1`" ]]; then
+  if [[ "`uname`" == "Darwin" ]]; then
+    bin="darwin_amd64"
+  else
+    bin="linux_amd64"
+  fi
+
+  curl https://releases.hashicorp.com/terraform/$tfversion/terraform_${tfversion}_${bin}.zip > terraform.zip
+  unzip -o terraform.zip
+  rm terraform.zip
+  chmod +x terraform
 fi
-curl https://releases.hashicorp.com/terraform/$tfversion/terraform_${tfversion}_${bin}.zip > terraform.zip
-unzip -o terraform.zip
-chmod +x terraform
 
 # Configure remote state storage
 ./terraform init \
@@ -81,3 +101,8 @@ chmod +x terraform
   -backend-config="bucket=$terraform_bucket_name" \
   -backend-config="key=$application/$environment.tfstate" \
   -force-copy -get=true -input=false
+
+# Cleanup
+if [[ $cleanup_backend -eq 0 ]]; then
+  rm backend.tf
+fi
