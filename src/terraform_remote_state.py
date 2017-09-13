@@ -34,7 +34,6 @@ class TRS(object):
             print("deleted .terraform")
             os.rmdir(".terraform")
 
-
     def generate_backend_conf(self):
         if not os.path.isfile("backend.tf"):
             backend_conf_file = open("backend.tf", "w")
@@ -84,3 +83,6 @@ class TRS(object):
             return True
         else:
             return False
+
+    def execute_terraform(self, args):
+        self.terraform_ ## TODO!

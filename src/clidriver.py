@@ -20,10 +20,13 @@ class CLIDriver(object):
             sys.exit(0)
         self.args['version'] = version
 
-        self.validate_args()
+        self.terraform_args = None
+        if self.validate_and_load_args():
+            self.terraform_args = sys.argv[1:]
 
         self.init_env()
-        terraform_remote_state.TRS(self.args)
+        trs = terraform_remote_state.TRS(self.args)
+        
 
     def accept_cli_args(self):
         parser = argparse.ArgumentParser()
@@ -37,13 +40,15 @@ class CLIDriver(object):
         parser.add_argument("-f", "--force", help="Force a TFR conf file update", action='store_true')
         parser.add_argument("-v", "--version", help="Version of toi", action='store_true')
 
-        return vars(parser.parse_args())
+        args, unknown = parser.parse_known_args()
+        return vars(args)
 
-    def validate_args(self):
+    def validate_and_load_args(self):
         if not self.args['bucket'] and not self.args['app'] and not self.args['env']:
             if os.path.exists(self.MODULE_CONFIG):
                 config = open(self.MODULE_CONFIG, "r").read()
                 self.args = json.loads(config)
+                return True
             else:
                 parser.error("Must specify --bucket, --app, and --env")
         elif os.path.exists(self.MODULE_CONFIG):
@@ -53,6 +58,7 @@ class CLIDriver(object):
                 self.write_args_to_conf_file()
         else:
             self.write_args_to_conf_file()
+        return False
 
 
     def write_args_to_conf_file(self):
