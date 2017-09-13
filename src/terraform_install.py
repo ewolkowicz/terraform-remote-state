@@ -19,8 +19,14 @@ class TerraformInstall(object):
             self.terraform_bin = sh.terraform
         except:
             self.terraform_bin = None
-
+        self._init_tfr_dir()
         self.get_or_install_tf_version()
+
+    def _init_tfr_dir(self):
+        try:
+            os.makedirs(self.TFR_DIR + self.TEMP)
+        except:
+            pass
 
     def get_or_install_tf_version(self, version=None):
         if version:
