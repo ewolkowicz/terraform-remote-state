@@ -8,7 +8,7 @@ import re
 
 class TerraformInstall(object):
 
-    TFR_DIR = str(os.path.expanduser('~/.tfr'))
+    TFR_DIR = str(os.path.expanduser('~/.trs'))
     TEMP = "/temp/"
 
     def __init__(self, auto_increment=False):
