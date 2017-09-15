@@ -1,6 +1,5 @@
 import os
 import stat
-import pprint
 import sh
 import requests
 import platform

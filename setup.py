@@ -8,7 +8,7 @@ Manages Terraform Remote State with AWS S3 and some management features for appl
 """
 
 setup(
-    name = 'tfr',
+    name = 'trs',
     packages = find_packages(),
     version = '1.0.0',
     license='MIT',
@@ -18,8 +18,8 @@ setup(
     author_email = 'brandon@brandonwagner.info',
     url = 'https://github.com/ewolkowicz/terraform-remote-state',
     download_url = 'https://github.com/ewolkowicz/terraform-remote-state/archive/1.0.0.tar.gz',
-    scripts = ['tfr'],
+    scripts = ['trs'],
     keywords = ['Terraform', 'S3', 'HashiCorp'],
     zip_safe = True,
-    install_requires=['boto3']
+    install_requires=['boto3', 'sh', 'requests']
 )
