@@ -47,6 +47,10 @@ class TerraformInstall(object):
                 return self._install_terraform(latest_version)
         return installed_version
 
+    def exec_terraform(self, *args):
+        if self.terraform_bin:
+            return self.terraform_bin(*args)
+
     def _install_terraform(self, version):
         print("Installing: " + version)
         platform_str = ""

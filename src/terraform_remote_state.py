@@ -5,34 +5,33 @@ import os
 import boto3
 import pprint
 import sh
+import shutil
 from . import terraform_install
 
 class TRS(object):
 
     def __init__(self, args):
-        self.path = os.path.abspath(args['path'])
         self.region = args['region']
         self.bucket = args['bucket']
         self.app = args['app']
         self.env = args['env']
-        self.awsprofile = args['awsprofile']
+        self.awsprofile = args['profile']
         self.auto_increment = args['auto_version']
 
         self.aws_session = boto3.Session(profile_name=self.awsprofile)
         self.s3Client = self.aws_session.client('s3', region_name=self.region)
 
-        terraform_install.TerraformInstall(self.auto_increment)
+        self.terraform = terraform_install.TerraformInstall(self.auto_increment)
 
         self.cleanup_previous_state()
         self.generate_backend_conf()
         self.setup_s3_bucket()
         self.check_previous_remote_state()
-
+        self.setup_remote_state()
 
     def cleanup_previous_state(self):
         if os.path.isdir(".terraform"):
-            print("deleted .terraform")
-            os.rmdir(".terraform")
+            shutil.rmtree(".terraform")
 
     def generate_backend_conf(self):
         if not os.path.isfile("backend.tf"):
@@ -84,5 +83,14 @@ class TRS(object):
         else:
             return False
 
-    def execute_terraform(self, args):
-        self.terraform_ ## TODO!
+    def setup_remote_state(self):
+        print(self.execute_terraform("init",
+           "-backend=true",
+           "-backend-config=region=%s"%(self.region),
+           "-backend-config=bucket=%s"%(self.bucket),
+           "-backend-config=profile=%s"%(self.awsprofile),
+           "-backend-config=key=%s/%s.tfstate"%(self.app, self.env),
+           "-force-copy", "-get=true", "-input=false"))
+
+    def execute_terraform(self, *args):
+        return self.terraform.exec_terraform(*args)
