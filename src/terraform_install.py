@@ -51,9 +51,9 @@ class TerraformInstall(object):
             return self.terraform_bin(*args)
 
     def _install_terraform(self, version):
-        print("Installing: " + version)
         platform_str = ""
         if not os.path.exists(self.TFR_DIR + "/" + version + "/" + "terraform"):
+            print("Downloading and Installing Terraform v" + version)
             if platform.system() == "Darwin":
                 platform_str = "darwin_amd64"
             elif platform.system() == "Linux":
@@ -62,9 +62,9 @@ class TerraformInstall(object):
             local_filename = "terraform"
             terraform_bin = self._download_file(terraform_url, local_filename + ".zip", version)
         else:
+            print("Using already installed Terraform v" + version)
             terraform_bin = self.TFR_DIR + "/" + version + "/" + "terraform"
         self.terraform_bin = sh.Command(terraform_bin)
-        print(self.terraform_bin("--version"))
 
 
     def _download_file(self, url, local_file, version):
