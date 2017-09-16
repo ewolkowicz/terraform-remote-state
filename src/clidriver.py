@@ -14,7 +14,7 @@ class CLIDriver(object):
         self.module_config = args.config
 
         self.args = vars(args)
-        self.version = pkg_resources.require("tfr")[0].version
+        self.version = pkg_resources.require("trs")[0].version
         if self.args['version']:
             self.print_version_and_exit()
         self.args['version'] = self.version
