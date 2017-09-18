@@ -44,7 +44,7 @@ class CLIDriver(object):
         parser.add_argument("-c", "--config", help="Path to .trsconf (default: \"./.trsconf\")", default="./.trsconf", type=str)
         parser.add_argument("--auto_version", help="Auto-Increment Terraform Version", action='store_true')
         parser.add_argument("-f", "--force", help="Force a TRS conf file update", action='store_true')
-        parser.add_argument("-v", "--version", help="Version of trs", action='store_true')
+        parser.add_argument("--version", help="Version of trs", action='store_true')
 
         args, unknown = parser.parse_known_args()
         return args, unknown

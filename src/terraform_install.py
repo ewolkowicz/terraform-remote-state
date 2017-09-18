@@ -5,6 +5,7 @@ import requests
 import platform
 import zipfile
 import re
+import sys
 
 class TerraformInstall(object):
 
@@ -13,6 +14,7 @@ class TerraformInstall(object):
 
     def __init__(self, auto_increment=False):
         self.auto_increment = auto_increment
+        self.aggregated = ""
 
         try:
             self.terraform_bin = sh.terraform
@@ -48,7 +50,18 @@ class TerraformInstall(object):
 
     def exec_terraform(self, *args):
         if self.terraform_bin:
-            return self.terraform_bin(*args)
+            self.aggregated = ""
+            p = self.terraform_bin(*args, _out=self.process_output, _out_bufsize=0, _tty_in=True)
+            p.wait()
+
+    def process_output(self, char, stdin):
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        self.aggregated += char
+        if self.aggregated.endswith("Enter a value:"):
+            val = input("")
+            stdin.put(val + "\n")
+
 
     def _install_terraform(self, version):
         platform_str = ""
