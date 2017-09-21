@@ -14,6 +14,7 @@ class CLIDriver(object):
         self.module_config = args.config
 
         self.args = vars(args)
+        self.unknown = unknown
         self.version = pkg_resources.require("trs")[0].version
         if self.args['version']:
             self.print_version_and_exit()
@@ -45,7 +46,7 @@ class CLIDriver(object):
         self.trs.app = "%s-%s" % (self.args['app'], self.state_to_deploy)
         self.trs.setup()
         if self.trs.get_remote_state_body():
-            temp_unknown = list(unknown)
+            temp_unknown = list(self.unknown)
             if temp_unknown[0] == "apply":
                 temp_unknown[0] = "destroy"
                 temp_unknown.append("-var")
@@ -55,18 +56,18 @@ class CLIDriver(object):
 
         print("Going to deploy: " + self.state_to_deploy)
         print("Going to destroy: " + self.state_to_destroy)
-        if unknown:
-            unknown.append("-var")
-            unknown.append("state=%s" % (self.state_to_deploy))
-            print(self.trs.execute_terraform(unknown))
+        if self.unknown:
+            self.unknown.append("-var")
+            self.unknown.append("state=%s" % (self.state_to_deploy))
+            print(self.trs.execute_terraform(self.unknown))
         self.trs.app = "%s-%s" % (self.args['app'], self.state_to_destroy)
         self.trs.setup()
-        if unknown[0] == "apply":
-            unknown[0] = "destroy"
-            unknown.append("-var")
-            unknown.append("state=%s" % (self.state_to_destroy))
-            unknown.append("-force")
-            print(self.trs.execute_terraform(unknown))
+        if self.unknown[0] == "apply":
+            self.unknown[0] = "destroy"
+            self.unknown.append("-var")
+            self.unknown.append("state=%s" % (self.state_to_destroy))
+            self.unknown.append("-force")
+            print(self.trs.execute_terraform(self.unknown))
 
 
     def print_version_and_exit(self):
