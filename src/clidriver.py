@@ -26,8 +26,48 @@ class CLIDriver(object):
         self._change_to_module_working_dir()
         self.trs = terraform_remote_state.TRS(self.args)
 
+        if self.args['red_black']:
+            self.red_black()
+        else:
+            self.trs.setup()
+            if unknown:
+                print(self.trs.execute_terraform(unknown))
+
+    def red_black(self):
+        self.trs.app = "%s-%s" % (self.trs.app, "a")
+        if self.trs.get_remote_state_body():
+            self.state_to_deploy = "b"
+            self.state_to_destroy = "a"
+        else:
+            self.state_to_deploy = "a"
+            self.state_to_destroy = "b"
+
+        self.trs.app = "%s-%s" % (self.args['app'], self.state_to_deploy)
+        self.trs.setup()
+        if self.trs.get_remote_state_body():
+            temp_unknown = list(unknown)
+            if temp_unknown[0] == "apply":
+                temp_unknown[0] = "destroy"
+                temp_unknown.append("-var")
+                temp_unknown.append("state=%s" % (self.state_to_deploy))
+                temp_unknown.append("-force")
+                print(self.trs.execute_terraform(temp_unknown))
+
+        print("Going to deploy: " + self.state_to_deploy)
+        print("Going to destroy: " + self.state_to_destroy)
         if unknown:
+            unknown.append("-var")
+            unknown.append("state=%s" % (self.state_to_deploy))
             print(self.trs.execute_terraform(unknown))
+        self.trs.app = "%s-%s" % (self.args['app'], self.state_to_destroy)
+        self.trs.setup()
+        if unknown[0] == "apply":
+            unknown[0] = "destroy"
+            unknown.append("-var")
+            unknown.append("state=%s" % (self.state_to_destroy))
+            unknown.append("-force")
+            print(self.trs.execute_terraform(unknown))
+
 
     def print_version_and_exit(self):
         print(self.version)
@@ -35,15 +75,16 @@ class CLIDriver(object):
 
     def accept_cli_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("-t", "--target", help="module path (default: \".\")", default=".", type=str)
-        parser.add_argument("-r", "--region", help="AWS Region (default: us-east-1)", default="us-east-1", type=str)
-        parser.add_argument("-b", "--bucket", help="S3 Bucket", type=str)
-        parser.add_argument("-a", "--app", help="Application Name", type=str)
-        parser.add_argument("-e", "--env", help="Environment (ie. dev, test, qa, prod)", type=str)
-        parser.add_argument("-p", "--profile", help="AWS Config Profile (default: default)", default="default", type=str)
-        parser.add_argument("-c", "--config", help="Path to .trsconf (default: \"./.trsconf\")", default="./.trsconf", type=str)
+        parser.add_argument("--target", help="module path (default: \".\")", default=".", type=str)
+        parser.add_argument("--region", help="AWS Region (default: us-east-1)", default="us-east-1", type=str)
+        parser.add_argument("--bucket", help="S3 Bucket", type=str)
+        parser.add_argument("--app", help="Application Name", type=str)
+        parser.add_argument("--env", help="Environment (ie. dev, test, qa, prod)", type=str)
+        parser.add_argument("--profile", help="AWS Config Profile (default: default)", default="default", type=str)
+        parser.add_argument("--config", help="Path to .trsconf (default: \"./.trsconf\")", default="./.trsconf", type=str)
+        parser.add_argument("--red_black", help="Perform a Red Black Deployment", action='store_true')
         parser.add_argument("--auto_version", help="Auto-Increment Terraform Version", action='store_true')
-        parser.add_argument("-f", "--force", help="Force a TRS conf file update", action='store_true')
+        parser.add_argument("--force", help="Force a TRS conf file update", action='store_true')
         parser.add_argument("--version", help="Version of trs", action='store_true')
 
         args, unknown = parser.parse_known_args()

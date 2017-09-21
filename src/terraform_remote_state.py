@@ -23,6 +23,7 @@ class TRS(object):
 
         self.terraform = terraform_install.TerraformInstall(self.auto_increment)
 
+    def setup(self):
         self.cleanup_previous_state()
         self.generate_backend_conf()
         self.setup_s3_bucket()
@@ -49,7 +50,7 @@ class TRS(object):
 
     def setup_s3_bucket(self):
         try:
-            s3Client.head_bucket(Bucket=self.bucket)
+            self.s3Client.head_bucket(Bucket=self.bucket)
         except:
             self.s3Client.create_bucket(Bucket=self.bucket)
             self.s3Client.put_bucket_versioning(
@@ -57,27 +58,32 @@ class TRS(object):
                 VersioningConfiguration={'MFADelete': 'Disabled', 'Status': 'Enabled'}
             )
 
-    def check_previous_remote_state(self):
+    def get_remote_state_body(self):
         key = "%s/%s.tfstate" % (self.app, self.env)
         try:
-            s3Client.head_object(Bucket=self.bucket, Key=key)
-            resp = s3Client.get_object(Bucket=self.bucket, Key=key)
+            self.s3Client.head_object(Bucket=self.bucket, Key=key)
+            resp = self.s3Client.get_object(Bucket=self.bucket, Key=key)
             jsonState = json.loads(resp['Body'].read())
             if self.is_state_file_empty(jsonState):
-                s3Client.delete_object(Bucket=self.bucket, Key=key)
+                return None
             else:
-                tf_version_for_state = jsonState['terraform_version']
-                if tf_version_for_state != self.tf_version:
-                    self.install_terraform(tf_version_for_state)
+                return jsonState
         except:
-            pass
+            return None
+
+    def check_previous_remote_state(self):
+        key = "%s/%s.tfstate" % (self.app, self.env)
+        remote_state_file = self.get_remote_state_body()
+        if remote_state_file:
+            tf_version_for_state = remote_state_file['terraform_version']
+            self.terraform.get_or_install_tf_version(tf_version_for_state)
+        else:
+            self.s3Client.delete_object(Bucket=self.bucket, Key=key)
+
 
     def is_state_file_empty(self, jsonState):
-        jsonState = json.loads(open("teststate.json", 'r').read())
         jsonState = [j['resources'] for j in jsonState['modules']]
-        resourceList = []
-        for k,v in jsonState[0].items():
-            resourceList.append(k)
+        resourceList = [item for sublist in jsonState for item in sublist]
         if len(resourceList) == 0:
             return True
         else:

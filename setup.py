@@ -7,7 +7,7 @@ long_description = """
 Manages Terraform Remote State with AWS S3 and some management features for applications and versioning
 """
 
-version = '1.0.2'
+version = '1.0.4'
 
 setup(
     name = 'trs',
