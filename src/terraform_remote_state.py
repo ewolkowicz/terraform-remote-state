@@ -18,7 +18,10 @@ class TRS(object):
         self.awsprofile = args['profile']
         self.auto_increment = args['auto_version']
 
-        self.aws_session = boto3.Session(profile_name=self.awsprofile)
+        if self.awsprofile != "default":
+            self.aws_session = boto3.Session(profile_name=self.awsprofile)
+        else:
+            self.aws_session = boto3.Session()
         self.s3Client = self.aws_session.client('s3', region_name=self.region)
 
         self.terraform = terraform_install.TerraformInstall(self.auto_increment)
